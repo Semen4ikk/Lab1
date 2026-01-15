@@ -6,7 +6,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.example.vsemk.data.local.MessageEntity
 import com.example.vsemk.data.repository.MessageRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.catch
@@ -22,8 +21,8 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = MessageRepository(application)
 
-    private val _messages = MutableLiveData<List<MessageEntity>>()
-    val messages: LiveData<List<MessageEntity>> = _messages
+    private val _messages = MutableLiveData<List<MessageUi>>()
+    val messages: LiveData<List<MessageUi>> = _messages
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
@@ -43,7 +42,7 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
     private fun observeMessages() {
         viewModelScope.launch {
             try {
-                repository.getAllMessages()
+                        repository.getAllMessages()
                     .flowOn(Dispatchers.IO)
                     .catch { e ->
                         Log.e(TAG, "Ошибка при наблюдении за сообщениями", e)
@@ -51,7 +50,18 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                         _isLoading.value = false
                     }
                     .collect { messageList ->
-                        _messages.value = messageList
+                        val current = _messages.value.orEmpty().associateBy { it.id }
+                        val mapped = messageList.map { entity ->
+                            val existing = current[entity.id]
+                            MessageUi(
+                                id = entity.id,
+                                title = entity.title,
+                                body = entity.body,
+                                userId = entity.userId,
+                                isLiked = existing?.isLiked ?: false
+                            )
+                        }
+                        _messages.value = mapped
                         _isLoading.value = false
                         Log.d(TAG, "Получено сообщений: ${messageList.size}")
                     }
@@ -94,6 +104,18 @@ class FeedViewModel(application: Application) : AndroidViewModel(application) {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun toggleLike(messageId: Int) {
+        val current = _messages.value.orEmpty()
+        val updated = current.map { message ->
+            if (message.id == messageId) {
+                message.copy(isLiked = !message.isLiked)
+            } else {
+                message
+            }
+        }
+        _messages.value = updated
     }
 
     override fun onCleared() {

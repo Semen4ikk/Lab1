@@ -10,8 +10,8 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.vsemk.R
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class FeedFragment : Fragment() {
 
@@ -22,7 +22,7 @@ class FeedFragment : Fragment() {
     private val viewModel: FeedViewModel by viewModels()
     private lateinit var adapter: MessageAdapter
     private lateinit var recyclerView: androidx.recyclerview.widget.RecyclerView
-    private lateinit var refreshButton: MaterialButton
+    private lateinit var refreshButton: FloatingActionButton
     private lateinit var progressBar: View
     private lateinit var errorTextView: android.widget.TextView
 
@@ -47,13 +47,15 @@ class FeedFragment : Fragment() {
 
     private fun setupViews(view: View) {
         recyclerView = view.findViewById(R.id.recycler_view)
-        refreshButton = view.findViewById(R.id.btn_refresh)
+        refreshButton = view.findViewById(R.id.fab_refresh)
         progressBar = view.findViewById(R.id.progress_bar)
         errorTextView = view.findViewById(R.id.tv_error)
     }
 
     private fun setupRecyclerView() {
-        adapter = MessageAdapter()
+        adapter = MessageAdapter { id ->
+            viewModel.toggleLike(id)
+        }
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
     }
